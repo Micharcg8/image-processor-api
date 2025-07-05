@@ -1,4 +1,11 @@
-import { Body, Controller, Post, Get, Param } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Get,
+  Param,
+  NotFoundException,
+} from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { TaskDocument } from './schemas/task.schemas';
@@ -20,5 +27,18 @@ export class TasksController {
   @Get(':taskId')
   async getTask(@Param('taskId') taskId: string): Promise<TaskDocument | null> {
     return this.tasksService.findById(taskId);
+  }
+
+  @Get('/images/:id')
+  async getImagesByTaskId(@Param('id') id: string) {
+    const task: TaskDocument | null = await this.tasksService.findById(id);
+    if (!task) {
+      throw new NotFoundException(`Task with id ${id} not found`);
+    }
+
+    return {
+      taskId: id,
+      images: task.images ?? [],
+    };
   }
 }
