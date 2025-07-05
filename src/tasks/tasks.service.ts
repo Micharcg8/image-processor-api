@@ -27,13 +27,15 @@ export class TasksService {
 
     const savedTask = (await createdTask.save()) as TaskDocument;
 
-    this.processTask((savedTask._id as unknown as string).toString(), originalPath).catch((error: unknown) => {
-      if (error instanceof Error) {
-        console.error('❌ Error al iniciar proceso:', error.message);
-      } else {
-        console.error('❌ Error al iniciar proceso:', error);
-      }
-    });
+    this.processTask((savedTask._id as string).toString(), originalPath).catch(
+      (error: unknown) => {
+        if (error instanceof Error) {
+          console.error('❌ Error al iniciar proceso:', error.message);
+        } else {
+          console.error('❌ Error al iniciar proceso:', error);
+        }
+      },
+    );
 
     return savedTask;
   }
