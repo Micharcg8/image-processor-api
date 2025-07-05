@@ -4,6 +4,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TasksModule } from './tasks/tasks.module';
 import { ImagesModule } from './images/images.module';
 import { SharedModule } from './shared/shared.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
+
 
 @Module({
   imports: [
@@ -17,6 +20,10 @@ import { SharedModule } from './shared/shared.module';
     TasksModule,
     ImagesModule,
     SharedModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', '..', 'output'),
+      serveRoot: '/output',
+    }),
   ],
 })
 export class AppModule {}

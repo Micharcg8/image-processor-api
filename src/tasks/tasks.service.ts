@@ -82,7 +82,7 @@ export class TasksService {
 
         imageVariants.push({
           resolution: width.toString(),
-          path: `/${relativePath}`,
+          path: '/' + relativePath.replace(/\\/g, '/').replace(/^\/+/, ''),
         });
       }
 
