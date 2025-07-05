@@ -38,17 +38,12 @@ export class TasksService {
     return savedTask;
   }
 
-  async findById(taskId: string): Promise<any> {
-    const task = await this.taskModel.findById(taskId).lean();
+  async findById(taskId: string): Promise<TaskDocument> {
+    const task = await this.taskModel.findById(taskId);
     if (!task) {
       throw new NotFoundException(`Task with ID ${taskId} not found`);
     }
-    const { _id, status, price, images } = task;
-    const response: any = { taskId: _id, status, price };
-    if (status === 'completed') {
-      response.images = images;
-    }
-    return response;
+    return task;
   }
 
   private async processTask(taskId: string, inputPath: string): Promise<void> {
