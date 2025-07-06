@@ -18,11 +18,10 @@ export class TasksService {
     const { originalPath } = createTaskDto;
     const price = parseFloat((Math.random() * (50 - 5) + 5).toFixed(2));
 
-    const createdTask = new this.taskModel({
+    const createdTask = await this.taskModel.create({
       status: 'pending',
       price,
       originalPath,
-      images: [],
     });
 
     const savedTask = (await createdTask.save()) as TaskDocument;
