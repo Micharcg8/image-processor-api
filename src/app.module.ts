@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TasksModule } from './tasks/tasks.module';
-import { ImagesModule } from './images/images.module';
 import { SharedModule } from './shared/shared.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
@@ -19,7 +18,6 @@ import { join } from 'path';
       inject: [ConfigService],
     }),
     TasksModule,
-    ImagesModule,
     SharedModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'output'),
