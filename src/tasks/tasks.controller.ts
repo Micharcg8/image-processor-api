@@ -9,6 +9,7 @@ import {
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { TaskDocument } from './schemas/task.schemas';
+import { ValidateObjectIdPipe } from '../shared/pipes/validate-object-id.pipe';
 
 @Controller('tasks')
 export class TasksController {
@@ -24,13 +25,13 @@ export class TasksController {
     };
   }
 
-  @Get(':taskId')
-  async getTask(@Param('taskId') taskId: string): Promise<TaskDocument | null> {
-    return this.tasksService.findById(taskId);
+  @Get(':id')
+  async findOne(@Param('id', ValidateObjectIdPipe) id: string) {
+    return this.tasksService.findById(id);
   }
 
   @Get('/images/:id')
-  async getImagesByTaskId(@Param('id') id: string) {
+  async getImagesByTaskId(@Param('id', ValidateObjectIdPipe) id: string) {
     const task: TaskDocument | null = await this.tasksService.findById(id);
     if (!task) {
       throw new NotFoundException(`Task with id ${id} not found`);
