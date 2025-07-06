@@ -6,6 +6,7 @@ import * as express from 'express';
 import { join } from 'path';
 
 async function bootstrap() {
+  const port = process.env.PORT || 3000;
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.use('/output', express.static(join(__dirname, '..', 'output')));
@@ -16,6 +17,6 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  await app.listen(3000);
+  await app.listen(port);
 }
 bootstrap();

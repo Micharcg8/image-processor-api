@@ -11,9 +11,11 @@ import { join } from 'path';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     MongooseModule.forRootAsync({
-      useFactory: (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGODB_URI'),
-      }),
+      useFactory: (configService: ConfigService) => {
+        const uri = configService.get<string>('MONGODB_URI');
+        console.log('🔗 Connecting to MongoDB:', uri);
+        return { uri };
+      },
       inject: [ConfigService],
     }),
     TasksModule,
