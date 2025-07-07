@@ -1,27 +1,32 @@
+/* eslint-disable @typescript-eslint/unbound-method */
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { TasksController } from './tasks.controller';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { Task } from '../domain/entities/task.entity';
 import { NotFoundException } from '@nestjs/common';
-import { TaskDocument } from './schemas/task.schemas';
 
 describe('TasksController', () => {
   let controller: TasksController;
+  let mockTasksService: jest.Mocked<TasksService>;
 
-  const mockTask: Partial<TaskDocument> = {
-    _id: '64e05f0c1234567890abcdef',
-    status: 'pending',
-    price: 12.34,
-    originalPath: 'https://example.com/image.jpg',
-    images: [],
-  };
-
-  const mockTasksService = {
-    create: jest.fn(),
-    findById: jest.fn(),
-  };
+  const mockTask = new Task(
+    '64e05f0c1234567890abcdef',
+    'pending',
+    12.34,
+    'https://example.com/image.jpg',
+    [],
+  );
 
   beforeEach(async () => {
+    mockTasksService = {
+      create: jest.fn().mockResolvedValue(mockTask),
+      findById: jest.fn().mockResolvedValue(mockTask),
+      taskRepository: {},
+      processTask: jest.fn(),
+    } as unknown as jest.Mocked<TasksService>;
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TasksController],
       providers: [
@@ -35,23 +40,19 @@ describe('TasksController', () => {
     controller = module.get<TasksController>(TasksController);
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
   });
 
   describe('create', () => {
     it('should return created task details', async () => {
-      const dto: CreateTaskDto = {
-        originalPath: 'https://example.com/image.jpg',
-      };
-
-      mockTasksService.create.mockResolvedValue(mockTask);
+      const dto: CreateTaskDto = { originalPath: mockTask.originalPath };
 
       const result = await controller.create(dto);
 
       expect(mockTasksService.create).toHaveBeenCalledWith(dto);
       expect(result).toEqual({
-        taskId: mockTask._id,
+        taskId: mockTask.id,
         status: mockTask.status,
         price: mockTask.price,
       });
@@ -60,29 +61,34 @@ describe('TasksController', () => {
 
   describe('findOne', () => {
     it('should return a task by ID', async () => {
-      mockTasksService.findById.mockResolvedValue(mockTask);
+      const result = await controller.findOne(mockTask.id);
 
-      const result = await controller.findOne(mockTask._id as string);
-
-      expect(mockTasksService.findById).toHaveBeenCalledWith(mockTask._id);
-      expect(result).toEqual(mockTask);
+      expect(mockTasksService.findById).toHaveBeenCalledWith(mockTask.id);
+      expect(result).toEqual({
+        taskId: mockTask.id,
+        status: mockTask.status,
+        price: mockTask.price,
+        originalPath: mockTask.originalPath,
+        images: mockTask.images,
+      });
     });
   });
 
   describe('getImagesByTaskId', () => {
     it('should return images from a task', async () => {
-      mockTasksService.findById.mockResolvedValue(mockTask);
+      const result = await controller.getImagesByTaskId(mockTask.id);
 
-      const result = await controller.getImagesByTaskId(mockTask._id as string);
-
+      expect(mockTasksService.findById).toHaveBeenCalledWith(mockTask.id);
       expect(result).toEqual({
-        taskId: mockTask._id,
-        images: [],
+        taskId: mockTask.id,
+        images: mockTask.images,
       });
     });
 
     it('should throw NotFoundException if task is not found', async () => {
-      mockTasksService.findById.mockResolvedValue(null);
+      mockTasksService.findById.mockRejectedValueOnce(
+        new NotFoundException('Task not found'),
+      );
 
       await expect(controller.getImagesByTaskId('invalid-id')).rejects.toThrow(
         NotFoundException,
