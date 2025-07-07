@@ -1,77 +1,82 @@
+/* eslint-disable @typescript-eslint/unbound-method */
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { TasksService } from './tasks.service';
-import { getModelToken } from '@nestjs/mongoose';
-import { Task } from './schemas/task.schemas';
-import { NotFoundException } from '@nestjs/common';
 import { CreateTaskDto } from './dto/create-task.dto';
+import {
+  TaskRepository,
+  TASK_REPOSITORY,
+} from '../domain/repositories/task.repository';
+import { Task } from '../domain/entities/task.entity';
+import { NotFoundException } from '@nestjs/common';
 
 describe('TasksService', () => {
   let service: TasksService;
-  let taskModel: {
-    create: jest.Mock;
-    findById: jest.Mock;
-    findByIdAndUpdate: jest.Mock;
-  };
+  let repository: jest.Mocked<TaskRepository>;
 
-  const mockTask = {
-    _id: '64e05f0c1234567890abcdef',
-    originalPath: 'https://example.com/image.jpg',
-    status: 'pending',
-    price: 25.5,
-    save: jest.fn().mockResolvedValue(this),
+  const mockTask = new Task(
+    '123',
+    'pending',
+    15.5,
+    'https://picsum.photos/200',
+    [],
+  );
+
+  const mockRepository: jest.Mocked<TaskRepository> = {
+    create: jest.fn().mockResolvedValue(mockTask),
+    findById: jest.fn().mockResolvedValue(mockTask),
+    save: jest.fn().mockResolvedValue(undefined),
+    markAsCompleted: jest.fn().mockResolvedValue(undefined),
+    markAsFailed: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(async () => {
-    taskModel = {
-      create: jest.fn().mockResolvedValue({
-        ...mockTask,
-        save: jest.fn().mockResolvedValue(mockTask),
-      }),
-      findById: jest.fn(),
-      findByIdAndUpdate: jest.fn(),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TasksService,
         {
-          provide: getModelToken(Task.name),
-          useValue: taskModel,
+          provide: TASK_REPOSITORY,
+          useValue: mockRepository,
         },
       ],
     }).compile();
 
     service = module.get<TasksService>(TasksService);
+    repository = module.get(TASK_REPOSITORY);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
   });
 
   describe('create', () => {
-    it('should create a task with random price and return it', async () => {
-      const dto: CreateTaskDto = {
-        originalPath: 'https://example.com/image.jpg',
-      };
+    it('should create a task and start processing', async () => {
+      const dto: CreateTaskDto = { originalPath: mockTask.originalPath };
 
       const result = await service.create(dto);
 
-      expect(taskModel.create).toHaveBeenCalled();
+      expect(repository.create as jest.Mock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          originalPath: dto.originalPath,
+          status: 'pending',
+        }),
+      );
+
       expect(result).toEqual(mockTask);
     });
   });
 
   describe('findById', () => {
-    it('should return a task by ID', async () => {
-      taskModel.findById.mockResolvedValue(mockTask);
-
-      const result = await service.findById(mockTask._id);
-
-      expect(taskModel.findById).toHaveBeenCalledWith(mockTask._id);
+    it('should return a task if found', async () => {
+      const result = await service.findById('123');
       expect(result).toEqual(mockTask);
     });
 
-    it('should throw NotFoundException if task is not found', async () => {
-      taskModel.findById.mockResolvedValue(null);
+    it('should throw NotFoundException if task not found', async () => {
+      repository.findById.mockResolvedValueOnce(null);
 
-      await expect(service.findById('invalid-id')).rejects.toThrow(
-        new NotFoundException('Task with ID invalid-id not found'),
+      await expect(service.findById('not-found-id')).rejects.toThrow(
+        NotFoundException,
       );
     });
   });

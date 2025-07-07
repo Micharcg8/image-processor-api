@@ -1,8 +1,8 @@
 # Image Processor API
 
-This project is a technical assessment built with **NestJS**, **MongoDB**, and **Sharp**, allowing asynchronous image processing from either remote URLs or local paths.
+This project is an API built with **NestJS**, **MongoDB**, and **Sharp**, enabling asynchronous image processing from remote URLs or local paths.
 
-The API allows the creation of image-processing tasks, resizes images into multiple resolutions, stores them locally, and persists metadata in MongoDB.
+It allows creating processing tasks, resizes images to multiple resolutions, saves them locally, and persists metadata in MongoDB.
 
 ---
 
@@ -10,12 +10,13 @@ The API allows the creation of image-processing tasks, resizes images into multi
 
 - **NestJS** + TypeScript
 - **MongoDB** with Mongoose
+- **Hexagonal Architecture** (Domain / Application / Infrastructure)
 - **Sharp** (image processing)
-- **Swagger** (API docs)
+- **Swagger** (API documentation)
 - **Jest** (unit testing)
-- **Class-validator** / custom pipes
-- **Dotenv** (environment config)
-- **ServeStatic** (static image access)
+- **Class-validator** / Custom Pipes
+- **Dotenv** (env config)
+- **ServeStatic** (static access to images)
 
 ---
 
@@ -34,32 +35,32 @@ cd image-processor-api
 npm install
 ```
 
-### 3. Configure environment
+### 3. Setup environment
 
-Create a `.env` file at the root:
+Create a `.env` file in the root of the project:
 
 ```
 MONGODB_URI=mongodb://localhost:27017/image_processor
 PORT=3000
 ```
 
-### 4. Run MongoDB
+### 4. Start MongoDB
 
-Ensure MongoDB is running locally. If you use Docker:
+Ensure MongoDB is running. If using Docker:
 
 ```bash
 docker run --name image-db -p 27017:27017 -d mongo
 ```
 
-### 5. Start the app
+### 5. Run the application
 
 ```bash
 npm run start:dev
 ```
 
-### 6. Access API Docs (Swagger)
+### 6. Access Swagger documentation
 
-Visit: [http://localhost:3000/api](http://localhost:3000/api)
+Go to: [http://localhost:3000/api](http://localhost:3000/api)
 
 ---
 
@@ -67,13 +68,28 @@ Visit: [http://localhost:3000/api](http://localhost:3000/api)
 
 ```
 src/
+├── app.module.ts
+├── main.ts
+│
+├── domain/
+│   ├── entities/
+│   │   └── task.entity.ts
+│   └── repositories/
+│       └── task.repository.ts
+│
+├── infraestructure/
+│   └── repositories/
+│       └── mongoose-task.repository.ts
+│
 ├── tasks/
 │   ├── tasks.controller.ts
 │   ├── tasks.service.ts
+│   ├── tasks.module.ts
 │   ├── dto/
 │   │   └── create-task.dto.ts
 │   └── schemas/
 │       └── task.schemas.ts
+│
 ├── shared/
 │   ├── pipes/
 │   │   └── validate-object-id.pipe.ts
@@ -82,8 +98,6 @@ src/
 │   └── utils/
 │       ├── download-image.ts
 │       └── get-md5.ts
-├── app.module.ts
-└── main.ts
 ```
 
 ---
@@ -100,33 +114,34 @@ Or with coverage:
 npm run test:cov
 ```
 
-### Included Unit Tests:
+### Tests Included
 
-- TasksService
-- TasksController
+- `TasksService`
+- `TasksController`
 - Pipes (`ValidateObjectIdPipe`)
 - Validators (`IsValidOriginalPath`)
 - Utilities (`download-image.ts`, `get-md5.ts`)
+- Repository (`MongooseTaskRepository`)
 
 ---
 
 ## How It Works
 
 1. **POST /tasks**  
-   - Accepts `originalPath` (URL or local path).
-   - Stores metadata in MongoDB.
-   - Triggers background processing (resizes to 1024px and 800px).
+   - Receives `originalPath` (URL or local path).
+   - Creates a task in MongoDB.
+   - Launches a background process to resize to 1024px and 800px.
    - Saves images in `/output`.
 
 2. **GET /tasks/:id**  
-   - Returns task details, including status, price, and path.
+   - Returns task status, price, and image paths.
 
 3. **GET /tasks/images/:id**  
-   - Returns only the processed images for that task.
+   - Returns only the processed images.
 
 ---
 
-## Example Task Payload
+## Example Payload
 
 ```json
 {
@@ -136,23 +151,28 @@ npm run test:cov
 
 ---
 
-## Validation and Error Handling
+## Validations and Error Handling
 
-- Invalid Mongo ObjectIds: handled by custom pipe
+- Invalid ObjectId: handled by a custom Pipe
 - `originalPath`:
-  - Must be a valid URL (`http/https`) or valid local file
-- Non-existent task IDs return `404`
-- Background processing errors are caught and status is marked `failed`
+  - Must be a valid `http/https` URL or an existing local file
+- Missing tasks return `404`
+- Processing errors are captured and marked as `failed`
+
+---
+## Diagram Api
+
+![architecture-preview](diagram-api.png)
 
 ---
 
 ## Development Notes
 
-- All code is modular and follows SOLID principles
-- Code is linted and formatted
-- PRs created through a `develop` branch with proper commits
-- Environment variables are externalized via `.env`
-- Static files are served from `/output` via `ServeStaticModule`
+- Modular code, follows SOLID principles
+- Linting and formatting applied
+- Env variables externalized
+- Static files available at `/output`
+- Hexagonal architecture implemented (Domain, Infra, App)
 
 ---
 
@@ -162,15 +182,15 @@ npm run test:cov
 
 ---
 
-## Todos / Possible Improvements
+## Possible Improvements
 
-- Add authentication for task creation
-- Persist processing logs
-- Add retry strategy for failed tasks
-- Upload processed images to cloud storage (e.g., AWS S3)
+- Add authentication
+- Persistent processing logs
+- Retry strategy for failures
+- Upload processed images to services like AWS S3
 
 ---
 
 ## Author
 
-Michael (Software Engineer)  
+Michael (Software Engineer)
