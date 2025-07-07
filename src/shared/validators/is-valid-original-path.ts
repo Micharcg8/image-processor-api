@@ -8,22 +8,28 @@ import * as path from 'path';
 @ValidatorConstraint({ name: 'isValidOriginalPath', async: false })
 export class IsValidOriginalPath implements ValidatorConstraintInterface {
   validate(value: string): boolean {
-    if (!value || typeof value !== 'string') return false;
-
-    if (value.startsWith('http://') || value.startsWith('https://')) {
-      try {
-        new URL(value);
-        return true;
-      } catch {
-        return false;
-      }
+    if (typeof value !== 'string' || !value.trim()) {
+      return false;
     }
 
-    const fullPath = path.resolve(value);
-    return fs.existsSync(fullPath);
+    if (this.isValidUrl(value)) {
+      return true;
+    }
+
+    const resolvedPath = path.resolve(value);
+    return fs.existsSync(resolvedPath);
   }
 
-  defaultMessage() {
-    return `originalPath must be a valid URL or an existing file path`;
+  private isValidUrl(value: string): boolean {
+    try {
+      const url = new URL(value);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  }
+
+  defaultMessage(): string {
+    return 'originalPath must be a valid HTTP(S) URL or an existing local file path.';
   }
 }

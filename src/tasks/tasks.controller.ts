@@ -1,16 +1,9 @@
-import {
-  Body,
-  Controller,
-  Post,
-  Get,
-  Param,
-  NotFoundException,
-} from '@nestjs/common';
+import { Body, Controller, Post, Get, Param } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
-import { TaskDocument } from './schemas/task.schemas';
 import { ValidateObjectIdPipe } from '../shared/pipes/validate-object-id.pipe';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { Task } from '../domain/entities/task.entity';
 
 @ApiTags('tasks')
 @Controller('tasks')
@@ -22,9 +15,9 @@ export class TasksController {
   @ApiResponse({ status: 201, description: 'Task successfully created' })
   @ApiResponse({ status: 400, description: 'Invalid input' })
   async create(@Body() createTaskDto: CreateTaskDto) {
-    const task: TaskDocument = await this.tasksService.create(createTaskDto);
+    const task: Task = await this.tasksService.create(createTaskDto);
     return {
-      taskId: task._id,
+      taskId: task.id,
       status: task.status,
       price: task.price,
     };
@@ -36,7 +29,14 @@ export class TasksController {
   @ApiResponse({ status: 200, description: 'Task found' })
   @ApiResponse({ status: 404, description: 'Task not found' })
   async findOne(@Param('id', ValidateObjectIdPipe) id: string) {
-    return this.tasksService.findById(id);
+    const task: Task = await this.tasksService.findById(id);
+    return {
+      taskId: task.id,
+      status: task.status,
+      price: task.price,
+      originalPath: task.originalPath,
+      images: task.images ?? [],
+    };
   }
 
   @Get('/images/:id')
@@ -45,13 +45,9 @@ export class TasksController {
   @ApiResponse({ status: 200, description: 'Images for the task' })
   @ApiResponse({ status: 404, description: 'Task not found' })
   async getImagesByTaskId(@Param('id', ValidateObjectIdPipe) id: string) {
-    const task: TaskDocument | null = await this.tasksService.findById(id);
-    if (!task) {
-      throw new NotFoundException(`Task with id ${id} not found`);
-    }
-
+    const task: Task = await this.tasksService.findById(id);
     return {
-      taskId: id,
+      taskId: task.id,
       images: task.images ?? [],
     };
   }
