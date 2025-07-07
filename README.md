@@ -158,7 +158,7 @@ npm run test:cov
 
 ## Swagger Preview
 
-![swagger-preview](https://imgur.com/a/uEz2I1K)
+![swagger-preview](swagger-preview.png)
 
 ---
 
