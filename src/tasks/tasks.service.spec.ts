@@ -1,7 +1,12 @@
+/* eslint-disable @typescript-eslint/unbound-method */
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
-import { TaskRepository } from '../domain/repositories/task.repository';
+import {
+  TaskRepository,
+  TASK_REPOSITORY,
+} from '../domain/repositories/task.repository';
 import { Task } from '../domain/entities/task.entity';
 import { NotFoundException } from '@nestjs/common';
 
@@ -17,10 +22,12 @@ describe('TasksService', () => {
     [],
   );
 
-  const mockRepository: Partial<jest.Mocked<TaskRepository>> = {
+  const mockRepository: jest.Mocked<TaskRepository> = {
     create: jest.fn().mockResolvedValue(mockTask),
     findById: jest.fn().mockResolvedValue(mockTask),
     save: jest.fn().mockResolvedValue(undefined),
+    markAsCompleted: jest.fn().mockResolvedValue(undefined),
+    markAsFailed: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(async () => {
@@ -28,14 +35,14 @@ describe('TasksService', () => {
       providers: [
         TasksService,
         {
-          provide: 'TASK_REPOSITORY',
+          provide: TASK_REPOSITORY,
           useValue: mockRepository,
         },
       ],
     }).compile();
 
     service = module.get<TasksService>(TasksService);
-    repository = module.get('TASK_REPOSITORY');
+    repository = module.get(TASK_REPOSITORY);
   });
 
   it('should be defined', () => {
@@ -48,8 +55,7 @@ describe('TasksService', () => {
 
       const result = await service.create(dto);
 
-      // eslint-disable-next-line @typescript-eslint/unbound-method
-      expect(repository.create).toHaveBeenCalledWith(
+      expect(repository.create as jest.Mock).toHaveBeenCalledWith(
         expect.objectContaining({
           originalPath: dto.originalPath,
           status: 'pending',
