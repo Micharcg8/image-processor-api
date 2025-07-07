@@ -1,46 +1,45 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Task, TaskDocument } from './schemas/task.schemas';
-import { Model } from 'mongoose';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { downloadImageToLocal } from '../shared/utils/download-image';
+import { getFileMd5 } from '../shared/utils/get-md5';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as sharp from 'sharp';
-import { downloadImageToLocal } from '../shared/utils/download-image';
-import { getFileMd5 } from '../shared/utils/get-md5';
-import { NotFoundException } from '@nestjs/common';
+import {
+  TaskRepository,
+  TASK_REPOSITORY,
+} from '../domain/repositories/task.repository';
+import { Task } from '../domain/entities/task.entity';
 
 @Injectable()
 export class TasksService {
-  constructor(@InjectModel(Task.name) private taskModel: Model<TaskDocument>) {}
+  constructor(
+    @Inject(TASK_REPOSITORY)
+    private readonly taskRepository: TaskRepository,
+  ) {}
 
-  async create(createTaskDto: CreateTaskDto): Promise<TaskDocument> {
+  async create(createTaskDto: CreateTaskDto): Promise<Task> {
     const { originalPath } = createTaskDto;
     const price = parseFloat((Math.random() * (50 - 5) + 5).toFixed(2));
 
-    const createdTask = await this.taskModel.create({
+    const createdTask = await this.taskRepository.create({
       status: 'pending',
       price,
       originalPath,
     });
 
-    const savedTask = (await createdTask.save()) as TaskDocument;
+    this.processTask(createdTask.id, originalPath).catch((error: unknown) => {
+      console.error(
+        '❌ Error al iniciar proceso:',
+        error instanceof Error ? error.message : error,
+      );
+    });
 
-    this.processTask((savedTask._id as string).toString(), originalPath).catch(
-      (error: unknown) => {
-        if (error instanceof Error) {
-          console.error('❌ Error al iniciar proceso:', error.message);
-        } else {
-          console.error('❌ Error al iniciar proceso:', error);
-        }
-      },
-    );
-
-    return savedTask;
+    return createdTask;
   }
 
-  async findById(taskId: string): Promise<TaskDocument> {
-    const task = await this.taskModel.findById(taskId);
+  async findById(taskId: string): Promise<Task> {
+    const task = await this.taskRepository.findById(taskId);
     if (!task) {
       throw new NotFoundException(`Task with ID ${taskId} not found`);
     }
@@ -49,6 +48,9 @@ export class TasksService {
 
   private async processTask(taskId: string, inputPath: string): Promise<void> {
     try {
+      const task = await this.taskRepository.findById(taskId);
+      if (!task) throw new Error(`Task ${taskId} not found`);
+
       const isUrl = inputPath.startsWith('http');
       const fileName = path.basename(inputPath).split('.')[0];
       const ext = path.extname(inputPath).replace('.', '') || 'jpg';
@@ -82,20 +84,19 @@ export class TasksService {
         });
       }
 
-      await this.taskModel.findByIdAndUpdate(taskId, {
-        status: 'completed',
-        images: imageVariants,
-      });
+      task.markAsCompleted(imageVariants);
+      await this.taskRepository.save(task);
     } catch (error) {
-      if (error instanceof Error) {
-        console.error('❌ Error procesando imagen:', error.message);
-      } else {
-        console.error('❌ Error inesperado:', error);
-      }
+      console.error(
+        '❌ Error procesando imagen:',
+        error instanceof Error ? error.message : error,
+      );
 
-      await this.taskModel.findByIdAndUpdate(taskId, {
-        status: 'failed',
-      });
+      const task = await this.taskRepository.findById(taskId);
+      if (task) {
+        task.markAsFailed();
+        await this.taskRepository.save(task);
+      }
     }
   }
 }
