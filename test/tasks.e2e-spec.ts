@@ -97,7 +97,7 @@ describe('TasksController (e2e)', () => {
       await new Promise((r) => setTimeout(r, delay));
     }
 
-    expect(processedTask).not.toBeNull();
+    expect(processedTask).toBeDefined();
 
     if (!processedTask) {
       throw new Error(
@@ -105,6 +105,9 @@ describe('TasksController (e2e)', () => {
       );
     }
 
+    expect(processedTask).toHaveProperty('taskId', taskId);
+    expect(processedTask.status).toBe('completed');
+    expect(processedTask).toHaveProperty('images');
     expect(Array.isArray(processedTask.images)).toBe(true);
     expect(processedTask.images && processedTask.images.length).toBeGreaterThan(
       0,
