@@ -84,24 +84,36 @@ describe('TasksController (e2e)', () => {
     const delay = 1000;
 
     for (let i = 0; i < maxRetries; i++) {
-      const res = await request(app.getHttpServer())
-        .get(`/tasks/${taskId}`)
-        .expect(200);
+      const res: request.Response = await request(app.getHttpServer()).get(
+        `/tasks/${taskId}`,
+      );
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const task: TaskResponse = res.body;
-      if (task.status === 'completed') {
-        processedTask = task;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (res.status === 200 && res.body.status === 'completed') {
+        processedTask = res.body as TaskResponse;
         break;
       }
 
       await new Promise((r) => setTimeout(r, delay));
     }
 
-    expect(processedTask).toBeDefined();
-    expect(Array.isArray(processedTask!.images)).toBe(true);
-    expect(processedTask!.images!.length).toBeGreaterThan(0);
-    expect(processedTask!.images![0]).toHaveProperty('resolution');
-    expect(processedTask!.images![0]).toHaveProperty('path');
+    expect(processedTask).not.toBeNull();
+
+    if (!processedTask) {
+      throw new Error(
+        `❌ Task with ID ${taskId} did not complete after ${maxRetries * delay}ms`,
+      );
+    }
+
+    expect(Array.isArray(processedTask.images)).toBe(true);
+    expect(processedTask.images && processedTask.images.length).toBeGreaterThan(
+      0,
+    );
+    expect(processedTask.images && processedTask.images[0]).toHaveProperty(
+      'resolution',
+    );
+    expect(processedTask.images && processedTask.images[0]).toHaveProperty(
+      'path',
+    );
   }, 20000);
 });

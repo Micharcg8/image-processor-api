@@ -115,6 +115,8 @@ npm run test:cov
 ```
 
 Also with e2e:
+> **Note:** Make sure MongoDB is running locally at `mongodb://localhost:27017` before running the E2E tests.
+
 
 ```bash
 npm run test:e2e
