@@ -55,6 +55,8 @@ describe('TasksController', () => {
         taskId: mockTask.id,
         status: mockTask.status,
         price: mockTask.price,
+        originalPath: mockTask.originalPath,
+        images: mockTask.images,
       });
     });
   });
