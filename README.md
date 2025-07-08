@@ -114,6 +114,12 @@ Or with coverage:
 npm run test:cov
 ```
 
+Also with e2e:
+
+```bash
+npm run test:e2e
+```
+
 ### Tests Included
 
 - `TasksService`
